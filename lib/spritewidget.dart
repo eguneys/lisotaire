@@ -3,9 +3,15 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'dart:ui' as ui;
-import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 
+import 'dart:math' as math;
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
+import 'package:vector_math/vector_math_64.dart';
+part 'node.dart';
+part 'sprite.dart';
 
 class Content {
 
@@ -28,30 +34,47 @@ class Content {
       for (var tag in tags) {
         List<Frame> frames = [];
 
-        for (int i = tag.from; i <= tag.to; i++) {
+        for (int i = tag['from']; i <= tag['to']; i++) {
           var _ = packs[i];
-          double duration = _.meta.duration / 1000;
-          Rect frameRect = Rect.fromLTWH(_.frame.x, _.frame.y, _.frame.w, _.frame.h);
-          Rect packedRect = Rect.fromLTWH(_.packed.x, _.packed.y, _.packed.w, _.packed.h);
+          double duration = _['meta']['duration'] / 1000;
+          Rect frameRect = _readJsonRect(_['frame']);
+          Rect packedRect = _readJsonRect(_['packed']);
 
           Frame frame = Frame(SpriteTexture._fromFrame(_image, frameRect, packedRect, origin), duration);
 
           frames.add(frame);
         }
 
-        Animation anim = Animation(tag.name, frames);
+        Animation anim = Animation(tag['name'], frames);
         animations.add(anim);
       }
 
-      Sprite sprite = Sprite(name, origin, animations);
+
+      SpriteHasAnimation sprite = SpriteHasAnimation(name, origin, animations);
 
       _sprites[name] = sprite;
     }
   }
 
+  Rect _readJsonRect(Map<dynamic, dynamic> data) {
+    num x = data['x'];
+    num y = data['y'];
+    num w = data['w'];
+    num h = data['h'];
+
+    return Rect.fromLTWH(
+      x.toDouble(),
+      y.toDouble(),
+      w.toDouble(),
+      h.toDouble(),
+    );
+  }
+
   final ui.Image _image;
 
-  final _sprites = <String, Sprite>{};
+  final _sprites = <String, SpriteHasAnimation>{};
+
+  SpriteHasAnimation? operator [](String name) => _sprites[name];
 }
 
 
@@ -68,32 +91,40 @@ class Animation {
   final List<Frame> frames;
 }
 
-class Sprite {
+class SpriteHasAnimation {
   final String name;
   final Offset origin;
   final Map<String, Animation> animations;
 
-  Sprite(this.name, this.origin, List<Animation> animationList) :
+  SpriteHasAnimation(this.name, this.origin, List<Animation> animationList) :
         animations = {
           for(Animation animation in animationList)
             animation.name: animation
         };
+
+
+  Animation? operator [](String name) => animations[name];
 }
 
 
 class SpriteTexture {
   SpriteTexture(this.image) :
+  size = Size(image.width.toDouble(), image.height.toDouble()),
   frame = Rect.fromLTRB(0.0, 0.0, image.width.toDouble(), image.height.toDouble()),
   packed = Rect.fromLTRB(0.0, 0.0, image.width.toDouble(), image.height.toDouble()),
   pivot = const Offset(0.5, 0.5);
 
-  SpriteTexture._fromFrame(this.image, this.frame, this.packed, this.pivot);
+  SpriteTexture._fromFrame(this.image, this.frame, this.packed, this.pivot):
+      size = frame.size;
 
+  final Size size;
   final ui.Image image;
   final Rect frame;
   final Rect packed;
   Offset pivot;
 
+  double get width => frame.width;
+  double get height => frame.height;
 
   void drawTexture(Canvas canvas, Offset position, Paint paint) {
     double x = position.dx;

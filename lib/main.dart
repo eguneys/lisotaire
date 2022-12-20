@@ -1,19 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lisotaire/spritewidget.dart';
-import 'package:lisotaire/widgets.dart';
+import 'package:lisotaire/anim.dart';
 
-late ImageMap  _imageMap;
-late SpriteSheet _spriteSheetUI;
+import 'package:lisotaire/spritewidget.dart';
+import 'package:lisotaire/widgets2.dart';
+import 'package:lisotaire/coordinates.dart';
+
+late Content _content;
+late Anim _anim;
+
+class Card extends NodeWithSize {
+  Card(): super(const Size(320, 180)) {
+    userInteractionEnabled = true;
+    _sprite = Sprite(texture: _anim.texture!);
+
+    addChild(_sprite);
+    this.position = Offset(100, 100);
+  }
+
+  @override
+  bool handleEvent(SpriteBoxEvent event) {
+    if (event.type == PointerEventType.down) {
+      _sprite.opacity = 0.5;
+      this.position = Offset(150, 150);
+      return true;
+    } else if (event.type == PointerEventType.move) {
+      this.position = event.boxPosition;
+    }
+    return false;
+  }
+
+  late Sprite _sprite;
+}
 
 void main() async {
 
-  _imageMap = ImageMap();
-  String json = await rootBundle.loadString('assets/game_ui.json');
-  _spriteSheetUI = SpriteSheet(
-    image: _imageMap['assets/game_ui.png']!,
-    json
+  //debugPaintSizeEnabled = true;
+  WidgetsFlutterBinding.ensureInitialized();
+
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
+  String json = await rootBundle.loadString('assets/out_0.json');
+
+  ImageMap imageMap = ImageMap();
+
+  await imageMap.load(<String>[
+    'assets/out_0.png'
+  ]);
+
+  _content = Content(
+    image: imageMap['assets/out_0.png']!,
+    json: json
   );
+
+  _anim = Anim('card', _content);
 
   runApp(const MyApp());
 }
@@ -28,67 +68,38 @@ class MyApp extends StatelessWidget {
       title: 'lisotaire',
       theme: ThemeData(
         canvasColor: Colors.white54,
-        appBarTheme: AppBarTheme(color: Colors.white30)
+        appBarTheme: const AppBarTheme(color: Colors.white30)
       ),
-      home: const MyHomePage(title: 'lisotaire'),
+      home: const MyHomePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class MyHomePage extends StatelessWidget {
+  const MyHomePage({super.key});
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            TextureButton(
-              texture: _spriteSheetUI['btn_powerup_0.png']!,
-              width: 60.0,
-              height: 60.0,
-              label: 'hello',
-              onPressed: () => {}
-            )
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+        body: Row(
+            children: <Widget>[
+              FloatingActionButton(
+                onPressed: () => {},
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(2)
+                ),
+                elevation: 1,
+                backgroundColor: Colors.blueGrey,
+                child: const Icon(Icons.menu),
+              ),
+              Expanded(
+                child: CoordinateSystem(
+                  systemSize: const Size(1920.0, 1080.0),
+                  child: SpriteWidget(Card())
+                )
+              )
+            ]
+        )
     );
   }
 }
