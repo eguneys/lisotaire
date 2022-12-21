@@ -13,6 +13,29 @@ import 'package:vector_math/vector_math_64.dart';
 part 'node.dart';
 part 'sprite.dart';
 
+
+class ContentData extends ChangeNotifier {
+
+  late Content content;
+
+  setContent(Content newContent) {
+    content = newContent;
+    notifyListeners();
+  }
+
+  static Future<Content> get data async {
+    String json = await rootBundle.loadString('assets/out_0.json');
+
+    ImageMap imageMap = ImageMap();
+
+    await imageMap.load(<String>[
+      'assets/out_0.png'
+    ]);
+
+    return Content(json: json, image: imageMap['assets/out_0.png']!);
+  }
+}
+
 class Content {
 
   Content({ required ui.Image image, required String json })

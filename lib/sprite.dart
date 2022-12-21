@@ -58,22 +58,8 @@ class SpriteBox extends RenderBox {
     required NodeWithSize rootNode
 }) {
     _rootNode = rootNode;
-    _addSpriteBoxReference(_rootNode);
   }
 
-  void _removeSpriteBoxReference(Node node) {
-    node._spriteBox = null;
-    for (Node child in node._children) {
-      _removeSpriteBoxReference(child);
-    }
-  }
-
-  void _addSpriteBoxReference(Node node) {
-    node._spriteBox = this;
-    for (Node child in node._children) {
-      _addSpriteBoxReference(child);
-    }
-  }
 
   @override
   void attach(PipelineOwner owner) {
@@ -112,11 +98,7 @@ class SpriteBox extends RenderBox {
   set rootNode(NodeWithSize value) {
     if (value == _rootNode) return;
 
-    _removeSpriteBoxReference(_rootNode);
-
     _rootNode = value;
-
-    _addSpriteBoxReference(_rootNode);
     markNeedsLayout();
   }
 
@@ -164,6 +146,8 @@ class SpriteBox extends RenderBox {
   void handleEvent(PointerEvent event, _SpriteBoxHitTestEntry entry) {
     if (!attached) return;
     if (event is PointerDownEvent) {
+
+      _eventTargets = [];
       _addEventTargets();
 
       List<Node> nodeTargets = <Node>[];
@@ -243,7 +227,9 @@ class SpriteBox extends RenderBox {
     _visibleArea = null;
     _transformMatrix = null;
     _rootNode._invalidateToBoxTransformMatrix();
+    _rootNode._spriteBoxTransformMatrix = this.transformMatrix;
   }
+
 
   @override
   void paint(PaintingContext context, Offset offset) {

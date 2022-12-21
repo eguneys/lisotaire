@@ -35,7 +35,7 @@ class NodeWithSize extends Node {
 class Node {
   Node();
 
-  SpriteBox? _spriteBox;
+  Matrix4? _spriteBoxTransformMatrix;
   Node? _parent;
 
   Offset _position = Offset.zero;
@@ -65,8 +65,6 @@ class Node {
   int? _handlingPointer;
 
   List<Node> _children = <Node>[];
-
-  SpriteBox? get spriteBox => _spriteBox;
 
   Node? get parent => _parent;
 
@@ -129,17 +127,13 @@ class Node {
     _childrenNeedSorting = true;
     _children.add(child);
     child._parent = this;
-    child._spriteBox = _spriteBox;
     _childrenLastAddedOrder += 1;
     child._addedOrder = _childrenLastAddedOrder;
-    if (_spriteBox != null) _spriteBox!._registerNode(child);
   }
 
   void removeChild(Node child) {
     if (_children.remove(child)) {
       child._parent = null;
-      child._spriteBox = null;
-      if (_spriteBox != null) _spriteBox!._deregisterNode(child);
     }
   }
 
@@ -151,11 +145,9 @@ class Node {
   void removeAllChildren() {
     for (Node child in _children) {
       child._parent = null;
-      child._spriteBox = null;
     }
     _children = <Node>[];
     _childrenNeedSorting = false;
-    if (_spriteBox != null) _spriteBox!._deregisterNode(null);
   }
 
   void _sortChildren() {
@@ -234,14 +226,13 @@ class Node {
   }
 
   Matrix4 _nodeToBoxMatrix() {
-    assert(_spriteBox != null);
     if (_transformMatrixNodeToBox != null) {
       return _transformMatrixNodeToBox!;
     }
 
     if (_parent == null) {
-      assert(this == _spriteBox!.rootNode);
-      _transformMatrixNodeToBox = _spriteBox!.transformMatrix.clone()
+      assert(_spriteBoxTransformMatrix != null);
+      _transformMatrixNodeToBox = _spriteBoxTransformMatrix!.clone()
       ..multiply(transformMatrix);
     } else {
       _transformMatrixNodeToBox = _parent!._nodeToBoxMatrix().clone()
@@ -251,8 +242,6 @@ class Node {
   }
 
   Matrix4 _boxToNodeMatrix() {
-    assert (_spriteBox != null);
-
     if (_transformMatrixBoxToNode != null) {
       return _transformMatrixBoxToNode!;
     }
@@ -271,8 +260,6 @@ class Node {
   }
 
   Offset convertPointToNodeSpace(Offset boxPoint) {
-    assert (_spriteBox != null);
-
     Vector4 v = _boxToNodeMatrix()
     .transform(Vector4(boxPoint.dx, boxPoint.dy, 0.0, 1.0));
 
@@ -280,17 +267,12 @@ class Node {
   }
 
   Offset convertPointToBoxSpace(Offset nodePoint) {
-    assert (_spriteBox != null);
-
     Vector4 v = _nodeToBoxMatrix()
     .transform(Vector4(nodePoint.dx, nodePoint.dy, 0.0, 1.0));
     return Offset(v[0], v[1]);
   }
 
   Offset convertPointFromNode(Offset point, Node node) {
-    assert (_spriteBox != null);
-    assert(_spriteBox != node._spriteBox);
-
     Offset boxPoint = node.convertPointToBoxSpace(point);
     Offset localPoint = convertPointToNodeSpace(boxPoint);
 
@@ -350,7 +332,6 @@ class Node {
 
   set userInteractionEnabled(bool userInteractionEnabled) {
     _userInteractionEnabled = userInteractionEnabled;
-    if (_spriteBox != null) _spriteBox!._eventTargets = null;
   }
 
   bool handleEvent(SpriteBoxEvent event) {
