@@ -1,40 +1,23 @@
 library spritewidget;
 import 'dart:async';
 import 'dart:convert';
-
 import 'dart:ui' as ui;
-
-import 'dart:math' as math;
-import 'package:flutter/rendering.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:vector_math/vector_math_64.dart';
-part 'node.dart';
-part 'sprite.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 
-class ContentData extends ChangeNotifier {
+final contentDataProvider = FutureProvider<Content>((ref) async {
+  String json = await rootBundle.loadString('assets/out_0.json');
 
-  late Content content;
+  ImageMap imageMap = ImageMap();
 
-  setContent(Content newContent) {
-    content = newContent;
-    notifyListeners();
-  }
+  await imageMap.load(<String>[
+    'assets/out_0.png'
+  ]);
 
-  static Future<Content> get data async {
-    String json = await rootBundle.loadString('assets/out_0.json');
-
-    ImageMap imageMap = ImageMap();
-
-    await imageMap.load(<String>[
-      'assets/out_0.png'
-    ]);
-
-    return Content(json: json, image: imageMap['assets/out_0.png']!);
-  }
-}
+  return Content(json: json, image: imageMap['assets/out_0.png']!);
+});
 
 class Content {
 

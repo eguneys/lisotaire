@@ -1,25 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:lisotaire/spritewidget.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lisotaire/content.dart';
 import 'package:lisotaire/widgets2.dart';
-import 'package:provider/provider.dart';
 
-class AnimatedSprite extends StatefulWidget {
+class AnimatedSprite extends ConsumerStatefulWidget {
   const AnimatedSprite({
     super.key,
-    required this.name
+    required this.name,
+    this.width,
+    this.height
   });
 
   final String name;
+  final double? width;
+  final double? height;
 
   @override
-  State<AnimatedSprite> createState() =>
-      _AnimatedSpriteState();
+  ConsumerState<AnimatedSprite> createState() => _AnimatedSpriteState();
 }
 
-class _AnimatedSpriteState extends State<AnimatedSprite> with
+class _AnimatedSpriteState extends ConsumerState<AnimatedSprite> with
 TickerProviderStateMixin {
 
-  late final SpriteHasAnimation? _sprite;
+  SpriteHasAnimation? _sprite;
 
   String _animation = 'idle';
   get animation => _sprite?.animations[_animation];
@@ -32,14 +35,22 @@ TickerProviderStateMixin {
   get texture => frame?.texture;
 
   @override
-  initState() {
-    super.initState();
-    _sprite = context.read<ContentData>().content[widget.name];
+  didChangeDependencies() {
+    super.didChangeDependencies();
+    final content = ref.watch(contentDataProvider);
+    content.when(
+        data: (Content data) {
+          _sprite = data[widget.name];
+        },
+        loading: () {},
+        error: (Object error, StackTrace? stackTrace) {
+        }
+    );
 
   }
 
   @override
   Widget build(BuildContext context) {
-    return TextureImage(texture: texture);
+    return TextureImage(texture: texture, width: widget.width, height: widget.height);
   }
 }

@@ -1,7 +1,8 @@
+import 'package:dartsolitaire/dartsolitaire.dart' as soli;
 import 'package:flutter/material.dart';
-import 'package:lisotaire/anim.dart';
-import 'package:lisotaire/spritewidget.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lisotaire/board.dart';
+import 'package:lisotaire/content.dart';
 import 'package:flutter/services.dart';
 
 void main() async {
@@ -12,15 +13,15 @@ void main() async {
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
 
-  runApp(MaterialApp(
-    home: MultiProvider(
-        providers: [
-          ChangeNotifierProvider(
-              create: (context) => ContentData()
-          )
-        ],
-        child: const MyApp()
-    )));
+  final container = ProviderContainer();
+  await container.read(contentDataProvider.future);
+
+  runApp(UncontrolledProviderScope(
+      container: container,
+      child: const MaterialApp(
+        home: MyApp()
+      )
+  ));
 }
 
 class MyApp extends StatelessWidget {
@@ -29,18 +30,7 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    final contentData = context.read<ContentData>();
-    return  FutureBuilder<Content>(
-            future: ContentData.data,
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                contentData.setContent(snapshot.data!);
-                return const MyHomePage();
-              } else {
-                return const Text('loading');
-              }
-            }
-        );
+    return const MyHomePage();
   }
 }
 
@@ -49,6 +39,7 @@ class MyHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Size screenSize = MediaQuery.of(context).size;
     return Scaffold(
         body: Row(
             children: <Widget>[
@@ -61,9 +52,12 @@ class MyHomePage extends StatelessWidget {
                 backgroundColor: Colors.blueGrey,
                 child: const Icon(Icons.menu),
               ),
-              const Expanded(
-                child: AnimatedSprite(name: 'card')
-              )
+              Expanded(
+                  child: Stack(
+                      children: [
+                        Board(size: screenSize, solitaire: soli.Solitaire.make)
+                      ]
+                  ))
             ]
         )
     );
